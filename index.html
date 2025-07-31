@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="az">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Mobil Anbar Pro</title>
+    <link rel="manifest" href="manifest.json">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        :root {
+            --primary: #4361ee;
+            --secondary: #3f37c9;
+            --danger: #f72585;
+            --light: #f8f9fa;
+            --dark: #212529;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #f5f5f5;
+            color: var(--dark);
+            line-height: 1.6;
+            padding-bottom: 60px;
+            transition: background 0.3s, color 0.3s;
+        }
+
+        body.dark {
+            background-color: #121212;
+            color: #f1f1f1;
+        }
+
+        body.dark .card {
+            background-color: #1e1e1e;
+        }
+
+        .header {
+            background: var(--primary);
+            color: white;
+            padding: 15px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .nav-tabs {
+            display: flex;
+            background: white;
+            position: sticky;
+            top: 60px;
+            z-index: 90;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 12px;
+            text-align: center;
+            border: none;
+            background: none;
+            font-size: 14px;
+            color: #666;
+            border-bottom: 3px solid transparent;
+        }
+
+        .tab-btn.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+            font-weight: bold;
+        }
+
+        .section {
+            display: none;
+            padding: 15px;
+        }
+
+        .section.active {
+            display: block;
+        }
+
+        .card {
+            background: white;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 3px rgba(0,0,0,0.1);
+        }
+
+        .product-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .product-info {
+            flex: 1;
+        }
+
+        .product-name {
+            font-weight: 500;
+            margin-bottom: 3px;
+        }
+
+        .product-meta {
+            display: flex;
+            font-size: 13px;
+            color: #666;
+        }
+
+        .product-meta span {
+            margin-right: 10px;
+        }
+
+        .action-btn {
+            border: none;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 13px;
+            margin-left: 8px;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-danger {
+            background: var(--danger);
+            color: white;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 16px;
+        }
+
+        .submit-btn {
+            width: 100%;
+            padding: 14px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 500;
+        }
+
+        .search-box {
+            position: sticky;
+            top: 110px;
+            z-index: 80;
+            background: white;
+            padding: 10px 15px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 10px 15px;
+            border: 1px solid #ddd;
+            border-radius: 20px;
+            font-size: 14px;
+        }
+
+        @media (min-width: 768px) {
+            body {
+                max-width: 500px;
+                margin: 0 auto;
+                border-left: 1px solid #ddd;
+                border-right: 1px solid #ddd;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <h1 id="title">Mobil Anbar Pro</h1>
+        <div>
+            <button onclick="toggleDarkMode()">🌙</button>
+            <select id="lang-selector" onchange="changeLanguage(this.value)">
+                <option value="az">AZ</option>
+                <option value="ru">RU</option>
+                <option value="en">EN</option>
+            </select>
+            <button onclick="generateReport()">📄</button>
+        </div>
+    </header>
+
+    <div class="nav-tabs">
+        <button class="tab-btn active" onclick="showSection('products')" id="tab-products">Məhsullar</button>
+        <button class="tab-btn" onclick="showSection('add')" id="tab-add">Əlavə Et</button>
+        <button class="tab-btn" onclick="showSection('sales')" id="tab-sales">Satışlar</button>
+    </div>
+
+    <div class="search-box">
+        <input type="text" class="search-input" placeholder="Axtar..." id="search-input">
+    </div>
+
+    <main>
+        <section id="products-section" class="section active">
+            <div id="products-list"></div>
+        </section>
+
+        <section id="add-section" class="section">
+            <div class="card">
+                <form id="add-form">
+                    <div class="form-group">
+                        <input type="text" class="form-control" id="product-name" placeholder="Məhsul adı" required>
+                    </div>
+                    <div class="form-group">
+                        <input type="number" class="form-control" id="product-quantity" placeholder="Miqdar" required>
+                    </div>
+                    <div class="form-group">
+                        <input type="number" step="0.01" class="form-control" id="product-price" placeholder="Qiymət" required>
+                    </div>
+                    <button type="submit" class="submit-btn" id="save-button">Yadda Saxla</button>
+                </form>
+            </div>
+        </section>
+
+        <section id="sales-section" class="section">
+            <div id="sales-list"></div>
+        </section>
+    </main>
+
+    <script>
+        let products = JSON.parse(localStorage.getItem('mobile_products')) || [];
+        let sales = JSON.parse(localStorage.getItem('mobile_sales')) || [];
+
+        const translations = {
+            az: { title: "Mobil Anbar Pro", add: "Əlavə Et", products: "Məhsullar", sales: "Satışlar", save: "Yadda Saxla" },
+            ru: { title: "Мобильный Склад", add: "Добавить", products: "Товары", sales: "Продажи", save: "Сохранить" },
+            en: { title: "Mobile Warehouse", add: "Add", products: "Products", sales: "Sales", save: "Save" }
+        };
+
+        document.addEventListener('DOMContentLoaded', () => {
+            renderProducts();
+            renderSales();
+            setupEventListeners();
+            const savedLang = localStorage.getItem('lang') || 'az';
+            document.getElementById('lang-selector').value = savedLang;
+            changeLanguage(savedLang);
+            if (localStorage.getItem('darkMode') === 'true') document.body.classList.add('dark');
+        });
+
+        function renderProducts(filtered = null) {
+            const list = filtered || products;
+            const container = document.getElementById('products-list');
+            container.innerHTML = '';
+            if (!list.length) {
+                container.innerHTML = '<div class="card">Məhsul tapılmadı</div>';
+                return;
+            }
+            list.forEach(p => {
+                const el = document.createElement('div');
+                el.className = 'card product-item';
+                el.innerHTML = `<div class="product-info">
+                    <div class="product-name">${p.name}</div>
+                    <div class="product-meta">
+                        <span>Miqdar: ${p.quantity}</span>
+                        <span>Qiymət: ${p.price} AZN</span>
+                    </div>
+                </div>
+                <div>
+                    <button class="action-btn btn-primary" onclick="sellProduct(${p.id})">Sat</button>
+                    <button class="action-btn btn-danger" onclick="deleteProduct(${p.id})">Sil</button>
+                </div>`;
+                container.appendChild(el);
+            });
+        }
+
+        function renderSales() {
+            const container = document.getElementById('sales-list');
+            container.innerHTML = '';
+            if (!sales.length) {
+                container.innerHTML = '<div class="card">Satış yoxdur</div>';
+                return;
+            }
+            sales.forEach(s => {
+                const el = document.createElement('div');
+                el.className = 'card product-item';
+                el.innerHTML = `<div class="product-info">
+                    <div class="product-name">${s.productName}</div>
+                    <div class="product-meta">
+                        <span>Qiymət: ${s.price} AZN</span>
+                        <span>Tarix: ${new Date(s.saleDate).toLocaleString()}</span>
+                    </div>
+                </div>`;
+                container.appendChild(el);
+            });
+        }
+
+        function addProduct(name, quantity, price) {
+            products.unshift({ id: Date.now(), name, quantity: parseInt(quantity), price: parseFloat(price), date: new Date().toISOString() });
+            save();
+            renderProducts();
+            showSection('products');
+        }
+
+        function sellProduct(id) {
+            const i = products.findIndex(p => p.id === id);
+            if (i !== -1 && products[i].quantity > 0) {
+                products[i].quantity--;
+                sales.unshift({ productId: id, productName: products[i].name, price: products[i].price, saleDate: new Date().toISOString() });
+                save();
+                renderProducts();
+                renderSales();
+            }
+        }
+
+        function deleteProduct(id) {
+            if (confirm('Silinsin?')) {
+                products = products.filter(p => p.id !== id);
+                save();
+                renderProducts();
+            }
+        }
+
+        function save() {
+            localStorage.setItem('mobile_products', JSON.stringify(products));
+            localStorage.setItem('mobile_sales', JSON.stringify(sales));
+        }
+
+        function showSection(id) {
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelector(`#tab-${id}`).classList.add('active');
+            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+            document.getElementById(`${id}-section`).classList.add('active');
+        }
+
+        function setupEventListeners() {
+            document.getElementById('add-form').addEventListener('submit', e => {
+                e.preventDefault();
+                const name = document.getElementById('product-name').value;
+                const quantity = document.getElementById('product-quantity').value;
+                const price = document.getElementById('product-price').value;
+                addProduct(name, quantity, price);
+                e.target.reset();
+            });
+
+            document.getElementById('search-input').addEventListener('input', e => {
+                const val = e.target.value.toLowerCase();
+                const filtered = products.filter(p => p.name.toLowerCase().includes(val));
+                renderProducts(filtered);
+            });
+        }
+
+        function toggleDarkMode() {
+            document.body.classList.toggle('dark');
+            localStorage.setItem('darkMode', document.body.classList.contains('dark'));
+        }
+
+        function changeLanguage(lang) {
+            localStorage.setItem('lang', lang);
+            const t = translations[lang];
+            document.getElementById('title').innerText = t.title;
+            document.getElementById('tab-products').innerText = t.products;
+            document.getElementById('tab-add').innerText = t.add;
+            document.getElementById('tab-sales').innerText = t.sales;
+            document.getElementById('save-button').innerText = t.save;
+        }
+
+        async function generateReport() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            doc.text("Satış Hesabatı", 10, 10);
+            sales.slice(0, 30).forEach((s, i) => {
+                doc.text(`${i + 1}) ${s.productName} - ${s.price} AZN - ${new Date(s.saleDate).toLocaleString()}`, 10, 20 + i * 10);
+            });
+            doc.save("hesabat.pdf");
+        }
+
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js');
+        }
+        function renderSales() {
+    const container = document.getElementById('sales-list');
+    container.innerHTML = '';
+    if (!sales.length) {
+        container.innerHTML = '<div class="card">Satış yoxdur</div>';
+        return;
+    }
+    sales.forEach((s, index) => {
+        const el = document.createElement('div');
+        el.className = 'card product-item';
+        el.innerHTML = `<div class="product-info">
+            <div class="product-name">${s.productName}</div>
+            <div class="product-meta">
+                <span>Qiymət: ${s.price} AZN</span>
+                <span>Tarix: ${new Date(s.saleDate).toLocaleString()}</span>
+            </div>
+        </div>
+        <div>
+            <button class="action-btn btn-danger" onclick="deleteSale(${index})">Sil</button>
+        </div>`;
+        container.appendChild(el);
+    });
+}
+function deleteSale(index) {
+    if (confirm('Bu satışı silmək istədiyinizə əminsiniz?')) {
+        sales.splice(index, 1);
+        save();
+        renderSales();
+    }
+}
+    </script>
+</body>
+</html>
